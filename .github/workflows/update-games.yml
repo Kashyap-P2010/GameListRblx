@@ -28,7 +28,7 @@ jobs:
 
       # 4️⃣ Run your fetchGames.js script
       - name: Run fetch script
-        run: node fetchGames.js
+        run: node GameListRblx/fetchGames.js
 
       # 5️⃣ Commit and push games.json if there are changes
       - name: Commit updated games.json
