@@ -10,31 +10,24 @@ jobs:
     runs-on: ubuntu-latest
 
     steps:
-      # 1️⃣ Checkout the repo with push credentials
-      - name: Checkout repository
-        uses: actions/checkout@v4
-        with:
-          persist-credentials: true   # <--- allows git push
+      # 1️⃣ Checkout the repo
+      - uses: actions/checkout@v4
 
-      # 2️⃣ Setup Node.js
-      - name: Setup Node.js
-        uses: actions/setup-node@v4
-        with:
-          node-version: '18'
-
-      # 3️⃣ Install dependencies
+      # 2️⃣ Install dependencies
       - name: Install dependencies
         run: npm install
+        working-directory: ./GameListRblx   # <-- folder containing fetchGames.js & package.json
 
-      # 4️⃣ Run your fetchGames.js script
+      # 3️⃣ Run fetchGames.js
       - name: Run fetch script
-        run: node GameListRblx/fetchGames.js
+        run: node fetchGames.js
+        working-directory: ./GameListRblx
 
-      # 5️⃣ Commit and push games.json if there are changes
+      # 4️⃣ Commit updated games.json
       - name: Commit updated games.json
         run: |
           git config user.name "github-actions[bot]"
           git config user.email "actions@users.noreply.github.com"
           git add games.json
           git diff --cached --quiet || git commit -m "Auto-update games.json"
-          git push origin HEAD:main
+          git push

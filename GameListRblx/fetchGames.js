@@ -1,11 +1,11 @@
 // fetchGames.js
-// Fetch real Roblox games by scraping popular games page
+// Scrapes Roblox popular games reliably
 
-import fs from 'fs/promises';
-import fetch from 'node-fetch';
-import jsdom from 'jsdom';
-const { JSDOM } = jsdom;
+const fs = require('fs').promises;
+const fetch = require('node-fetch');
+const { JSDOM } = require('jsdom');
 
+// URLs to scrape popular games from Roblox
 const ROBLOX_POPULAR_URLS = [
   "https://www.roblox.com/games?SortFilter=default&GenreFilter=1&TimeFilter=0", // popular
   "https://www.roblox.com/games?SortFilter=TopPaid&GenreFilter=1&TimeFilter=0", // top paid
@@ -14,15 +14,12 @@ const ROBLOX_POPULAR_URLS = [
 
 async function fetchGamesFromPage(url) {
   try {
-    const res = await fetch(url, {
-      headers: { "User-Agent": "Mozilla/5.0" } // Roblox blocks empty user agents
-    });
+    const res = await fetch(url, { headers: { "User-Agent": "Mozilla/5.0" } });
     const html = await res.text();
 
     const dom = new JSDOM(html);
     const document = dom.window.document;
 
-    // Find all game links
     const gameElements = Array.from(document.querySelectorAll('a[data-game-id]'));
     const games = gameElements.map(el => ({
       id: el.getAttribute('data-game-id'),
@@ -30,7 +27,6 @@ async function fetchGamesFromPage(url) {
     }));
 
     return games.filter(g => g.id);
-
   } catch (err) {
     console.error(`❌ Error fetching ${url}:`, err);
     return [];
@@ -48,11 +44,7 @@ async function fetchGamesFromPage(url) {
   // Remove duplicates
   const uniqueGames = Array.from(new Map(allGames.map(g => [g.id, g])).values());
 
-  if (uniqueGames.length === 0) {
-    console.error('❌ No games fetched at all!');
-  } else {
-    console.log(`✅ Fetched ${uniqueGames.length} unique games.`);
-  }
+  console.log(`✅ Fetched ${uniqueGames.length} unique games.`);
 
   await fs.writeFile('games.json', JSON.stringify(uniqueGames, null, 2));
   console.log('✅ games.json updated.');
