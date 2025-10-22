@@ -1,7 +1,7 @@
 {
   "name": "gamelistrblx",
   "version": "1.0.0",
-  "type": "module",
+  "type": "commonjs",
   "dependencies": {
     "jsdom": "^27.0.1",
     "node-fetch": "^2.7.0"
