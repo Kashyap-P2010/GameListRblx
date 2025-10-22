@@ -1,48 +1,54 @@
 // fetchGames.js
-// Fetch popular Roblox games and update games.json
+// Fetch top Roblox games and save as games.json
 
 import fs from 'fs/promises';
 import fetch from 'node-fetch';
 
-// Replace with a real sort token if needed, or leave null for fallback
-const SORTS_URL = 'https://games.roblox.com/v1/games/sorts?model.gameSortsContext=GamesDefaultSorts';
-const LIST_URL = 'https://games.roblox.com/v1/games/list';
+const GAMES_URL = 'https://games.roblox.com/v1/games/list'; // official endpoint
 
-async function getSortToken(){
-  const res = await fetch(SORTS_URL, { headers: { 'Accept': 'application/json' }});
-  const json = await res.json();
-  // pick first token available
-  const token = json?.data?.[0]?.token || Object.values(json)[0];
-  if (!token) throw new Error('No sort token found. Inspect JSON: ' + JSON.stringify(json, null, 2));
-  return token;
-}
-
-async function fetchGames(token, limit = 30){
-  const res = await fetch(LIST_URL, {
-    method: 'POST',
-    headers: { 'Content-Type': 'application/json', 'Accept': 'application/json' },
-    body: JSON.stringify({ sortToken: token, limit })
-  });
-  const json = await res.json();
-  const entries = (json?.data || []);
-  return entries.map(g => ({
-    name: g?.name || g?.rootPlace?.name || 'Unknown',
-    id: g?.id || g?.rootPlace?.id
-  })).filter(x => x.id);
-}
-
-(async ()=>{
+// Fetch a list of popular games
+async function fetchPopularGames(limit = 30) {
   try {
-    console.log('Fetching sort token...');
-    const token = await getSortToken();
-    console.log('Token:', token);
-    console.log('Fetching games list...');
-    const games = await fetchGames(token);
-    console.log(`Fetched ${games.length} games.`);
-    await fs.writeFile('games.json', JSON.stringify(games, null, 2));
-    console.log('✅ Updated games.json');
+    const res = await fetch(GAMES_URL, {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+        'Accept': 'application/json',
+        'User-Agent': 'RobloxFetcher/1.0' // sometimes helps avoid empty results
+      },
+      body: JSON.stringify({
+        sortToken: 'TopPaid', // options: TopPaid, TopRated, Popular, etc.
+        limit
+      })
+    });
+
+    const data = await res.json();
+
+    if (!data?.data || data.data.length === 0) {
+      console.error('❌ No games returned from Roblox API.');
+      return [];
+    }
+
+    return data.data.map(g => ({
+      id: g?.id || g?.rootPlace?.id || null,
+      name: g?.name || g?.rootPlace?.name || 'Unknown'
+    })).filter(g => g.id);
+
   } catch (err) {
-    console.error('❌ Error:', err.message);
-    process.exit(1);
+    console.error('❌ Error fetching games:', err);
+    return [];
   }
+}
+
+(async () => {
+  const games = await fetchPopularGames(30);
+
+  if (games.length === 0) {
+    console.log('⚠️  No games fetched, check API or sortToken');
+  } else {
+    console.log(`✅ Fetched ${games.length} games.`);
+  }
+
+  await fs.writeFile('games.json', JSON.stringify(games, null, 2));
+  console.log('✅ games.json updated.');
 })();
